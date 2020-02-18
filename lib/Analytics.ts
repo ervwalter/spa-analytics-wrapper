@@ -5,7 +5,6 @@ class Tracker {
 	private gaguesIdentifier?: string;
 	private sentryDSN?: string;
 	private isInitialized: boolean = false;
-	private isTrackingStarted: boolean = false;
 	private DNT: boolean = navigator.doNotTrack === "1";
 	private userId?: string;
 	private isMatomoUserIdSet: boolean = false;
@@ -58,7 +57,6 @@ class Tracker {
 			const isMatomoInitialized = !!w._paq;
 			w._paq = w._paq || [];
 			const paq = w._paq;
-			paq.push(["trackPageView"]);
 			paq.push(["setCustomUrl", window.location.pathname]);
 			paq.push(["setDocumentTitle", document.title]);
 			paq.push(["deleteCustomVariables", "page"]);
@@ -69,6 +67,7 @@ class Tracker {
 			} else if (this.isMatomoUserIdSet) {
 				paq.push(["resetUserId"]);
 			}
+			paq.push(["trackPageView"]);
 			if (!isMatomoInitialized) {
 				paq.push(["enableHeartBeatTimer"]);
 				paq.push(["enableLinkTracking"]);
@@ -118,7 +117,7 @@ class Tracker {
 	};
 
 	public logEvent = (key: string, value: string) => {
-		if (!this.isTrackingStarted) {
+		if (!this.isInitialized) {
 			return;
 		}
 		if (this.matomoIdentifier) {
@@ -130,7 +129,7 @@ class Tracker {
 	};
 
 	public setUser = (userId: string) => {
-		if (!this.isTrackingStarted) {
+		if (!this.isInitialized) {
 			return;
 		}
 
@@ -149,7 +148,7 @@ class Tracker {
 	};
 
 	public clearUser = () => {
-		if (!this.isTrackingStarted) {
+		if (!this.isInitialized) {
 			return;
 		}
 

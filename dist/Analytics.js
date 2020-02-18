@@ -5,7 +5,6 @@ var Tracker = /** @class */ (function () {
     function Tracker() {
         var _this = this;
         this.isInitialized = false;
-        this.isTrackingStarted = false;
         this.DNT = navigator.doNotTrack === "1";
         this.isMatomoUserIdSet = false;
         this.track = function () {
@@ -20,7 +19,6 @@ var Tracker = /** @class */ (function () {
                 var isMatomoInitialized = !!w._paq;
                 w._paq = w._paq || [];
                 var paq_1 = w._paq;
-                paq_1.push(["trackPageView"]);
                 paq_1.push(["setCustomUrl", window.location.pathname]);
                 paq_1.push(["setDocumentTitle", document.title]);
                 paq_1.push(["deleteCustomVariables", "page"]);
@@ -32,6 +30,7 @@ var Tracker = /** @class */ (function () {
                 else if (_this.isMatomoUserIdSet) {
                     paq_1.push(["resetUserId"]);
                 }
+                paq_1.push(["trackPageView"]);
                 if (!isMatomoInitialized) {
                     paq_1.push(["enableHeartBeatTimer"]);
                     paq_1.push(["enableLinkTracking"]);
@@ -79,7 +78,7 @@ var Tracker = /** @class */ (function () {
             }
         };
         this.logEvent = function (key, value) {
-            if (!_this.isTrackingStarted) {
+            if (!_this.isInitialized) {
                 return;
             }
             if (_this.matomoIdentifier) {
@@ -90,7 +89,7 @@ var Tracker = /** @class */ (function () {
             }
         };
         this.setUser = function (userId) {
-            if (!_this.isTrackingStarted) {
+            if (!_this.isInitialized) {
                 return;
             }
             if (_this.matomoIdentifier) {
@@ -105,7 +104,7 @@ var Tracker = /** @class */ (function () {
             _this.userId = userId;
         };
         this.clearUser = function () {
-            if (!_this.isTrackingStarted) {
+            if (!_this.isInitialized) {
                 return;
             }
             if (_this.matomoIdentifier) {

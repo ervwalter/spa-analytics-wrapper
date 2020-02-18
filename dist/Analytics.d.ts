@@ -3,7 +3,6 @@ declare class Tracker {
     private gaguesIdentifier?;
     private sentryDSN?;
     private isInitialized;
-    private isTrackingStarted;
     private DNT;
     private userId?;
     private isMatomoUserIdSet;
