@@ -17,13 +17,24 @@ var Tracker = /** @class */ (function () {
                 var siteId_1 = _this.matomoIdentifier.siteId;
                 var hostname_1 = _this.matomoIdentifier.hostname;
                 var w = window;
+                var isMatomoInitialized = !!w._paq;
+                w._paq = w._paq || [];
                 var paq_1 = w._paq;
-                if (!paq_1) {
-                    w._paq = w._paq || [];
-                    paq_1 = w._paq;
-                    paq_1.push(["trackPageView"]);
-                    paq_1.push(["enableLinkTracking"]);
+                paq_1.push(["trackPageView"]);
+                paq_1.push(["setCustomUrl", window.location.pathname]);
+                paq_1.push(["setDocumentTitle", document.title]);
+                paq_1.push(["deleteCustomVariables", "page"]);
+                paq_1.push(["setGenerationTimeMs", 0]);
+                if (_this.userId) {
+                    paq_1.push(["setUserId", _this.userId]);
+                    _this.isMatomoUserIdSet = true;
+                }
+                else if (_this.isMatomoUserIdSet) {
+                    paq_1.push(["resetUserId"]);
+                }
+                if (!isMatomoInitialized) {
                     paq_1.push(["enableHeartBeatTimer"]);
+                    paq_1.push(["enableLinkTracking"]);
                     (function () {
                         var u = "https://" + hostname_1 + "/";
                         paq_1.push(["setTrackerUrl", u + "matomo.php"]);
@@ -37,18 +48,6 @@ var Tracker = /** @class */ (function () {
                     })();
                 }
                 else {
-                    paq_1.push(["setCustomUrl", window.location.pathname]);
-                    paq_1.push(["setDocumentTitle", document.title]);
-                    paq_1.push(["deleteCustomVariables", "page"]);
-                    paq_1.push(["setGenerationTimeMs", 0]);
-                    if (_this.userId) {
-                        paq_1.push(["setUserId", _this.userId]);
-                        _this.isMatomoUserIdSet = true;
-                    }
-                    else if (_this.isMatomoUserIdSet) {
-                        paq_1.push(["resetUserId"]);
-                    }
-                    paq_1.push(["trackPageView"]);
                     // run this after the render completes and the DOM is updated
                     setImmediate(function () {
                         paq_1.push(["enableLinkTracking"]);
@@ -127,6 +126,9 @@ var Tracker = /** @class */ (function () {
             };
     }
     Tracker.prototype.init = function (options) {
+        if (options.ignoreDNT) {
+            this.DNT = false;
+        }
         if (this.DNT) {
             this.log("I respect your decision to be not tracked. Analytics & error tracking have been");
             this.log("disabled. Learn more about DNT: https://en.wikipedia.org/wiki/Do_Not_Track");

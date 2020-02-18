@@ -10,7 +10,17 @@ class Tracker {
 	private userId?: string;
 	private isMatomoUserIdSet: boolean = false;
 
-	public init(options: { gaugesIdentifier?: string; matomoIdentifier?: { hostname: string; siteId: string }; sentryDSN?: string; sentryRelease?: string }) {
+	public init(options: {
+		gaugesIdentifier?: string;
+		matomoIdentifier?: { hostname: string; siteId: string };
+		sentryDSN?: string;
+		sentryRelease?: string;
+		ignoreDNT?: boolean;
+	}) {
+		if (options.ignoreDNT) {
+			this.DNT = false;
+		}
+
 		if (this.DNT) {
 			this.log("I respect your decision to be not tracked. Analytics & error tracking have been");
 			this.log("disabled. Learn more about DNT: https://en.wikipedia.org/wiki/Do_Not_Track");
@@ -45,13 +55,23 @@ class Tracker {
 			const siteId = this.matomoIdentifier.siteId;
 			const hostname = this.matomoIdentifier.hostname;
 			const w = window as any;
-			let paq = w._paq;
-			if (!paq) {
-				w._paq = w._paq || [];
-				paq = w._paq;
-				paq.push(["trackPageView"]);
-				paq.push(["enableLinkTracking"]);
+			const isMatomoInitialized = !!w._paq;
+			w._paq = w._paq || [];
+			const paq = w._paq;
+			paq.push(["trackPageView"]);
+			paq.push(["setCustomUrl", window.location.pathname]);
+			paq.push(["setDocumentTitle", document.title]);
+			paq.push(["deleteCustomVariables", "page"]);
+			paq.push(["setGenerationTimeMs", 0]);
+			if (this.userId) {
+				paq.push(["setUserId", this.userId]);
+				this.isMatomoUserIdSet = true;
+			} else if (this.isMatomoUserIdSet) {
+				paq.push(["resetUserId"]);
+			}
+			if (!isMatomoInitialized) {
 				paq.push(["enableHeartBeatTimer"]);
+				paq.push(["enableLinkTracking"]);
 				(function() {
 					var u = `https://${hostname}/`;
 					paq.push(["setTrackerUrl", u + "matomo.php"]);
@@ -66,17 +86,6 @@ class Tracker {
 					s.parentNode!.insertBefore(g, s);
 				})();
 			} else {
-				paq.push(["setCustomUrl", window.location.pathname]);
-				paq.push(["setDocumentTitle", document.title]);
-				paq.push(["deleteCustomVariables", "page"]);
-				paq.push(["setGenerationTimeMs", 0]);
-				if (this.userId) {
-					paq.push(["setUserId", this.userId]);
-					this.isMatomoUserIdSet = true;
-				} else if (this.isMatomoUserIdSet) {
-					paq.push(["resetUserId"]);
-				}
-				paq.push(["trackPageView"]);
 				// run this after the render completes and the DOM is updated
 				setImmediate(() => {
 					paq.push(["enableLinkTracking"]);
@@ -118,7 +127,6 @@ class Tracker {
 				paq.push(["trackEvent", key, value]);
 			}
 		}
-		
 	};
 
 	public setUser = (userId: string) => {

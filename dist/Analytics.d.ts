@@ -15,6 +15,7 @@ declare class Tracker {
         };
         sentryDSN?: string;
         sentryRelease?: string;
+        ignoreDNT?: boolean;
     }): void;
     track: () => void;
     logEvent: (key: string, value: string) => void;
