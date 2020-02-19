@@ -1,17 +1,21 @@
 import * as Sentry from "@sentry/browser";
 
 class Tracker {
-	private matomoIdentifier?: { hostname: string; siteId: string };
+	private matomoIdentifier?: {
+		hostname: string;
+		siteId: string;
+		script?: string;
+		tracker?: string;
+	};
 	private gaguesIdentifier?: string;
 	private sentryDSN?: string;
 	private isInitialized: boolean = false;
+	private isMatomoInitialized: boolean = false;
 	private DNT: boolean = navigator.doNotTrack === "1";
-	private userId?: string;
-	private isMatomoUserIdSet: boolean = false;
 
 	public init(options: {
 		gaugesIdentifier?: string;
-		matomoIdentifier?: { hostname: string; siteId: string };
+		matomoIdentifier?: { hostname: string; siteId: string; script?: string; tracker?: string };
 		sentryDSN?: string;
 		sentryRelease?: string;
 		ignoreDNT?: boolean;
@@ -51,29 +55,25 @@ class Tracker {
 		}
 
 		if (this.matomoIdentifier) {
-			const siteId = this.matomoIdentifier.siteId;
-			const hostname = this.matomoIdentifier.hostname;
 			const w = window as any;
-			const isMatomoInitialized = !!w._paq;
 			w._paq = w._paq || [];
 			const paq = w._paq;
 			paq.push(["setCustomUrl", window.location.pathname]);
 			paq.push(["setDocumentTitle", document.title]);
 			paq.push(["deleteCustomVariables", "page"]);
 			paq.push(["setGenerationTimeMs", 0]);
-			if (this.userId) {
-				paq.push(["setUserId", this.userId]);
-				this.isMatomoUserIdSet = true;
-			} else if (this.isMatomoUserIdSet) {
-				paq.push(["resetUserId"]);
-			}
 			paq.push(["trackPageView"]);
-			if (!isMatomoInitialized) {
+			const self = this;
+			if (!this.isMatomoInitialized) {
+				const siteId = this.matomoIdentifier.siteId;
+				const hostname = this.matomoIdentifier.hostname;
+				const script = this.matomoIdentifier.script || "matomo.js";
+				const tracker = this.matomoIdentifier.tracker || "matomo.php";
 				paq.push(["enableHeartBeatTimer"]);
 				paq.push(["enableLinkTracking"]);
 				(function() {
 					var u = `https://${hostname}/`;
-					paq.push(["setTrackerUrl", u + "matomo.php"]);
+					paq.push(["setTrackerUrl", u + tracker]);
 					paq.push(["setSiteId", siteId]);
 					var d = document,
 						g = d.createElement("script"),
@@ -81,8 +81,9 @@ class Tracker {
 					g.type = "text/javascript";
 					g.async = true;
 					g.defer = true;
-					g.src = u + "matomo.js";
+					g.src = u + script;
 					s.parentNode!.insertBefore(g, s);
+					self.isMatomoInitialized = true;
 				})();
 			} else {
 				// run this after the render completes and the DOM is updated
@@ -134,17 +135,15 @@ class Tracker {
 		}
 
 		if (this.matomoIdentifier) {
-			const paq = (window as any)._paq;
-			if (paq) {
-				paq.push(["setUserId", userId]);
-			}
+			const w = window as any;
+			w._paq = w._paq || [];
+			const paq = w._paq;
+			paq.push(["setUserId", userId]);
 		}
 
 		if (this.sentryDSN) {
 			Sentry.setUser({ id: userId });
 		}
-
-		this.userId = userId;
 	};
 
 	public clearUser = () => {
@@ -153,17 +152,31 @@ class Tracker {
 		}
 
 		if (this.matomoIdentifier) {
-			const paq = (window as any)._paq;
-			if (paq) {
-				paq.push(["resetUserId"]);
-			}
+			const w = window as any;
+			w._paq = w._paq || [];
+			const paq = w._paq;
+			paq.push(["resetUserId"]);
 		}
 
 		if (this.sentryDSN) {
 			Sentry.configureScope(scope => scope.clear());
 		}
+	};
 
-		this.userId = undefined;
+	public setCustom = <T>(values: T, scope: string = "visit") => {
+		if (!this.isInitialized) {
+			return;
+		}
+
+		if (this.matomoIdentifier) {
+			const w = window as any;
+			w._paq = w._paq || [];
+			const paq = w._paq;
+			let index = 1;
+			for (const key in values) {
+				paq.push(["setCustomVariable", index++, key, values[key], scope]);
+			}
+		}
 	};
 
 	private log =

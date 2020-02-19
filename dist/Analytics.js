@@ -5,45 +5,41 @@ var Tracker = /** @class */ (function () {
     function Tracker() {
         var _this = this;
         this.isInitialized = false;
+        this.isMatomoInitialized = false;
         this.DNT = navigator.doNotTrack === "1";
-        this.isMatomoUserIdSet = false;
         this.track = function () {
             // skip tracking if DNT is enabled, or if things haven't been intiaized
             if (_this.DNT || !_this.isInitialized) {
                 return;
             }
             if (_this.matomoIdentifier) {
-                var siteId_1 = _this.matomoIdentifier.siteId;
-                var hostname_1 = _this.matomoIdentifier.hostname;
                 var w = window;
-                var isMatomoInitialized = !!w._paq;
                 w._paq = w._paq || [];
                 var paq_1 = w._paq;
                 paq_1.push(["setCustomUrl", window.location.pathname]);
                 paq_1.push(["setDocumentTitle", document.title]);
                 paq_1.push(["deleteCustomVariables", "page"]);
                 paq_1.push(["setGenerationTimeMs", 0]);
-                if (_this.userId) {
-                    paq_1.push(["setUserId", _this.userId]);
-                    _this.isMatomoUserIdSet = true;
-                }
-                else if (_this.isMatomoUserIdSet) {
-                    paq_1.push(["resetUserId"]);
-                }
                 paq_1.push(["trackPageView"]);
-                if (!isMatomoInitialized) {
+                var self_1 = _this;
+                if (!_this.isMatomoInitialized) {
+                    var siteId_1 = _this.matomoIdentifier.siteId;
+                    var hostname_1 = _this.matomoIdentifier.hostname;
+                    var script_1 = _this.matomoIdentifier.script || "matomo.js";
+                    var tracker_1 = _this.matomoIdentifier.tracker || "matomo.php";
                     paq_1.push(["enableHeartBeatTimer"]);
                     paq_1.push(["enableLinkTracking"]);
                     (function () {
                         var u = "https://" + hostname_1 + "/";
-                        paq_1.push(["setTrackerUrl", u + "matomo.php"]);
+                        paq_1.push(["setTrackerUrl", u + tracker_1]);
                         paq_1.push(["setSiteId", siteId_1]);
                         var d = document, g = d.createElement("script"), s = d.getElementsByTagName("script")[0];
                         g.type = "text/javascript";
                         g.async = true;
                         g.defer = true;
-                        g.src = u + "matomo.js";
+                        g.src = u + script_1;
                         s.parentNode.insertBefore(g, s);
+                        self_1.isMatomoInitialized = true;
                     })();
                 }
                 else {
@@ -93,30 +89,43 @@ var Tracker = /** @class */ (function () {
                 return;
             }
             if (_this.matomoIdentifier) {
-                var paq = window._paq;
-                if (paq) {
-                    paq.push(["setUserId", userId]);
-                }
+                var w = window;
+                w._paq = w._paq || [];
+                var paq = w._paq;
+                paq.push(["setUserId", userId]);
             }
             if (_this.sentryDSN) {
                 Sentry.setUser({ id: userId });
             }
-            _this.userId = userId;
         };
         this.clearUser = function () {
             if (!_this.isInitialized) {
                 return;
             }
             if (_this.matomoIdentifier) {
-                var paq = window._paq;
-                if (paq) {
-                    paq.push(["resetUserId"]);
-                }
+                var w = window;
+                w._paq = w._paq || [];
+                var paq = w._paq;
+                paq.push(["resetUserId"]);
             }
             if (_this.sentryDSN) {
                 Sentry.configureScope(function (scope) { return scope.clear(); });
             }
-            _this.userId = undefined;
+        };
+        this.setCustom = function (values, scope) {
+            if (scope === void 0) { scope = "visit"; }
+            if (!_this.isInitialized) {
+                return;
+            }
+            if (_this.matomoIdentifier) {
+                var w = window;
+                w._paq = w._paq || [];
+                var paq = w._paq;
+                var index = 1;
+                for (var key in values) {
+                    paq.push(["setCustomVariable", index++, key, values[key], scope]);
+                }
+            }
         };
         this.log = console.info.bind(console) ||
             console.log.bind(console) ||
